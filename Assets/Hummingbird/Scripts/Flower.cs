@@ -36,7 +36,14 @@ public class Flower : MonoBehaviour
     {
         get
         {
-            return necterCollider.transform.up;
+            if (necterCollider)
+            {
+                return necterCollider.transform.up;
+            }
+            else
+            {
+                return transform.up;
+            }    
         }
     }
 
@@ -79,7 +86,7 @@ public class Flower : MonoBehaviour
 
         NectarAmount -= amount;
 
-        if (NectarAmount <= 0f)
+        if (!HasNectar)
         {
             // No nectar Remaining
             NectarAmount = 0f;
@@ -102,6 +109,7 @@ public class Flower : MonoBehaviour
     public void ResetFlower()
     {
         // Refill the nectar
+        NectarAmount = 1f;
 
         // Enabled flower and nectar colliders
         flowerCollider.gameObject.SetActive(true);
