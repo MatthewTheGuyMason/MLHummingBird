@@ -1,0 +1,65 @@
+{
+    "Hummingbird": {
+        "checkpoints": [
+            {
+                "steps": 3499993,
+                "file_path": "results\\hb_02\\Hummingbird\\Hummingbird-3499993.onnx",
+                "reward": 0.07780451966183526,
+                "creation_time": 1650467188.9244435,
+                "auxillary_file_paths": [
+                    "results\\hb_02\\Hummingbird\\Hummingbird-3499993.pt"
+                ]
+            },
+            {
+                "steps": 3999969,
+                "file_path": "results\\hb_02\\Hummingbird\\Hummingbird-3999969.onnx",
+                "reward": 0.17258621752262115,
+                "creation_time": 1650468231.67005,
+                "auxillary_file_paths": [
+                    "results\\hb_02\\Hummingbird\\Hummingbird-3999969.pt"
+                ]
+            },
+            {
+                "steps": 4499969,
+                "file_path": "results\\hb_02\\Hummingbird\\Hummingbird-4499969.onnx",
+                "reward": 0.7573921254702977,
+                "creation_time": 1650469436.6029987,
+                "auxillary_file_paths": [
+                    "results\\hb_02\\Hummingbird\\Hummingbird-4499969.pt"
+                ]
+            },
+            {
+                "steps": 4999913,
+                "file_path": "results\\hb_02\\Hummingbird\\Hummingbird-4999913.onnx",
+                "reward": null,
+                "creation_time": 1650470745.1788585,
+                "auxillary_file_paths": [
+                    "results\\hb_02\\Hummingbird\\Hummingbird-4999913.pt"
+                ]
+            },
+            {
+                "steps": 5000553,
+                "file_path": "results\\hb_02\\Hummingbird\\Hummingbird-5000553.onnx",
+                "reward": null,
+                "creation_time": 1650470745.3468437,
+                "auxillary_file_paths": [
+                    "results\\hb_02\\Hummingbird\\Hummingbird-5000553.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 5000553,
+            "file_path": "results\\hb_02\\Hummingbird.onnx",
+            "reward": null,
+            "creation_time": 1650470745.3468437,
+            "auxillary_file_paths": [
+                "results\\hb_02\\Hummingbird\\Hummingbird-5000553.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.29.0",
+        "torch_version": "1.11.0"
+    }
+}
