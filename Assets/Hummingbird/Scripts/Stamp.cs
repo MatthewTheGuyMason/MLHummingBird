@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class Stamp : MonoBehaviour
 {
-    public BoxCollider stampCollider;
+
 
     // Start is called before the first frame update
     void Start()

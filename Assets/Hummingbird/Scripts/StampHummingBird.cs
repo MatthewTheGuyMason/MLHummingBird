@@ -11,16 +11,23 @@ public class StampHummingBird : HummingBirdAgent
     /// <summary>
     /// The stamp the agent is currently holding
     /// </summary>
-    private Stamp stampHeld;
+    private DogStamp stampHeld;
 
-    /// <summary>
-    /// The stamp holder to bring stamps back too
-    /// </summary>
-    [SerializeField]
-    private StampHolder stampHolder;
+    private Dictionary<DogType, StampHolder> stampHolders; 
 
     [SerializeField]
-    private Stamp stampPrefab;
+    private DogStampFactory stampFactory;
+
+    public override void Initialize()
+    {
+        base.Initialize();
+        stampHolders = new Dictionary<DogType, StampHolder>();
+        StampHolder[] stampHolderComponents = flowerArea.GetComponentsInChildren<StampHolder>();
+        for (int i = 0; i < stampHolderComponents.Length; ++i)
+        {
+            stampHolders.Add(stampHolderComponents[i].heldType, stampHolderComponents[i]);
+        }
+    }
 
     /// <summary>
     /// Collect vector observations from the environment
@@ -41,11 +48,20 @@ public class StampHummingBird : HummingBirdAgent
         }
         else
         {
-            desination = stampHolder.transform.position;
-            desinationUpVector = stampHolder.transform.up;
+            if (stampHolders.TryGetValue(stampHeld.dogType, out StampHolder stampHolder))
+            {
+                desination = stampHolder.transform.position;
+                desinationUpVector = stampHolder.transform.up;
+            }
+            else
+            {
+                Destroy(stampHeld.gameObject);
+                desination = nearestFlower.FlowerCenterPosition;
+                desinationUpVector = Vector3.up;
+            }
         }
         // Get a vector from the beak tip to the nearest flower
-        Vector3 toDestination = desination  - beakTip.position;
+        Vector3 toDestination = desination - beakTip.position;
 
         // Observe a normalized vector pointing to the nearest flower (3 observations)
         sensor.AddObservation(toDestination.normalized);
@@ -102,9 +118,9 @@ public class StampHummingBird : HummingBirdAgent
         // Add a section about adding items to the collection box
         if (stampHeld != null)
         {
-            if (collider.TryGetComponent<StampHolder>(out StampHolder stampHolder))
+            if (collider.TryGetComponent<DropPointCollider>(out DropPointCollider dropCollider))
             {
-                stampHolder.DespositStamp(stampHeld);
+                dropCollider.connectedStampHolder.DespositStamp(stampHeld);
                 stampHeld = null;
                 AddReward(0.1f);
                 Debug.Log("Stamp Collected");
@@ -144,7 +160,10 @@ public class StampHummingBird : HummingBirdAgent
                     if (!flower.HasNectar)
                     {
                         // Spawn a stamp at the beak
-                        stampHeld = GameObject.Instantiate(stampPrefab.gameObject, beakTip).GetComponent<Stamp>();
+                        stampHeld = stampFactory.CreateDogStamp();
+                        stampHeld.transform.rotation = beakTip.rotation;
+                        stampHeld.transform.position = beakTip.position;
+                        stampHeld.transform.SetParent(beakTip);
                         nearestFlower = null;
                         Debug.Log("Flower Drained");
                     }

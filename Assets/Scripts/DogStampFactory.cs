@@ -15,21 +15,23 @@ public class DogStampFactory : MonoBehaviour
 
     public List<DogPictures> dogPicturesSets;
 
-    public GameObject stampPrefab;
+    public DogStamp stampPrefab;
 
-    public GameObject CreateDogStamp()
+    public DogStamp CreateDogStamp()
     {
         // Pick random dog picture
         int randomPictureSetIndex = Random.Range(0, dogPicturesSets.Count);
         Texture2D picture = dogPicturesSets[randomPictureSetIndex].dogPictures[Random.Range(0, dogPicturesSets[randomPictureSetIndex].dogPictures.Length)];
-        //dogPicturesSets[randomPictureSetIndex].dogPictures()
-        return null;
+        DogStamp newStamp = GameObject.Instantiate(stampPrefab).GetComponent<DogStamp>();
+
+        newStamp.SetPicture(dogPicturesSets[randomPictureSetIndex].dogType, picture);
+        return newStamp;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        CreateDogStamp();
     }
 
     // Update is called once per frame
