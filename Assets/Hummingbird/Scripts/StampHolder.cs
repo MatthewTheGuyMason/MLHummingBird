@@ -20,6 +20,9 @@ public class StampHolder : MonoBehaviour
     [SerializeField]
     private TextMeshPro textMesh;
 
+    [SerializeField]
+    private float distanceBetweenStamp;
+
     /// <summary>
     /// Position the new stamp at the top of the stack in the game world and in code
     /// </summary>
@@ -36,7 +39,7 @@ public class StampHolder : MonoBehaviour
         if (stampStack == null)
         {
             stampStack = new Stack<DogStamp>();
-            despositedStamp.transform.position = stampStackTransformBottom.position + Vector3.up * despositedStamp.stampCollider.size.z * 0.5f;
+            despositedStamp.transform.position = stampStackTransformBottom.position;
             despositedStamp.transform.SetParent(stampStackTransformBottom);
             despositedStamp.transform.forward = Vector3.up;
             dropPointBottom.transform.position = despositedStamp.transform.position;
@@ -45,7 +48,7 @@ public class StampHolder : MonoBehaviour
         else
         {
             DogStamp topStamp = stampStack.Peek();
-            despositedStamp.transform.position = topStamp.transform.position + Vector3.up * topStamp.stampCollider.size.z * 0.5f + Vector3.up * despositedStamp.stampCollider.size.z * 0.5f;
+            despositedStamp.transform.position = topStamp.transform.position + Vector3.up * distanceBetweenStamp;
             despositedStamp.transform.SetParent(stampStackTransformBottom);
             despositedStamp.transform.forward = Vector3.up;
             dropPointBottom.transform.position = despositedStamp.transform.position;

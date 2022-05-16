@@ -113,6 +113,7 @@ MonoBehaviour:
   heldType: 97
   dropPointBottom: {fileID: 5694706422265104245}
   textMesh: {fileID: 2704968179561980432}
+  distanceBetweenStamp: 0.1
 --- !u!1 &7241232743436010055
 GameObject:
   m_ObjectHideFlags: 0

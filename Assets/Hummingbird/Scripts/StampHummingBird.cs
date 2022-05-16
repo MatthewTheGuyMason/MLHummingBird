@@ -18,6 +18,12 @@ public class StampHummingBird : HummingBirdAgent
     [SerializeField]
     private DogStampFactory stampFactory;
 
+    [SerializeField]
+    private HolderSpawner holderSpawner;
+
+    [SerializeField]
+    private DogClassifier dogClassifier;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -93,6 +99,22 @@ public class StampHummingBird : HummingBirdAgent
         {
             GameObject.Destroy(stampHeld.gameObject);
             stampHeld = null;
+        }
+
+        // Reset the holders
+        holderSpawner.SpawnHolders();
+        if (stampHolders == null)
+        {
+            stampHolders = new Dictionary<DogType, StampHolder>();
+        }
+        else
+        {
+            stampHolders.Clear();
+        }
+        StampHolder[] stampHolderComponents = holderSpawner.GetAllHoldersInLevel();
+        for (int i = 0; i < stampHolderComponents.Length; ++i)
+        {
+            stampHolders.Add(stampHolderComponents[i].heldType, stampHolderComponents[i]);
         }
     }
 

@@ -75,7 +75,7 @@ public class DogClassifier : MonoBehaviour
 
     }
 
-    public int TestTexture(Texture2D texture2DToTest)
+    public int TestTextureForIntValue(Texture2D texture2DToTest)
     {
         if (texture2DToTest.width != expectedTextureWidth || texture2DToTest.height != expectedTextureHeight)
         {
@@ -94,24 +94,39 @@ public class DogClassifier : MonoBehaviour
         return typePrediction.predictedValue;
     }
 
-    public int[] TestTextureArray(Texture2D[] texture2DsToTest)
+    public DogType TestTextureForDogType(Texture2D texture2DToTest)
+    {
+        return (DogType)TestTextureForIntValue(texture2DToTest);
+    }
+
+    public int[] TestTextureForIntValueArray(Texture2D[] texture2DsToTest)
     {
         int[] predictedOutComes = new int[texture2DsToTest.Length];
         for (int i = 0; i < texture2DsToTest.Length; ++i)
         {
-            predictedOutComes[i] = TestTexture(texture2DsToTest[i]);
+            predictedOutComes[i] = TestTextureForIntValue(texture2DsToTest[i]);
         }
         return predictedOutComes;
     }
 
-    public int[] FindMostCommanInTextureArray(Texture2D[] texture2DsToTest)
+    public DogType[] TestTextureForDogTypeArray(Texture2D[] texture2DsToTest)
+    {
+        DogType[] predictedOutComes = new DogType[texture2DsToTest.Length];
+        for (int i = 0; i < texture2DsToTest.Length; ++i)
+        {
+            predictedOutComes[i] = (DogType)TestTextureForIntValue(texture2DsToTest[i]);
+        }
+        return predictedOutComes;
+    }
+
+    public int[] FindMostCommanIntInTextureArray(Texture2D[] texture2DsToTest)
     {
         Dictionary<int, int> predictionCount = new Dictionary<int, int>();
         int biggestCount = 0;
         List<int> currentBiggestPredictions = new List<int>();
         for (int i = 0; i < texture2DsToTest.Length; ++i)
         {
-            int currentPrediction = TestTexture(texture2DsToTest[i]);
+            int currentPrediction = TestTextureForIntValue(texture2DsToTest[i]);
             if (predictionCount.TryGetValue(currentPrediction, out int count))
             {
                 int newCount = count + 1;
@@ -125,6 +140,37 @@ public class DogClassifier : MonoBehaviour
                 else if (newCount == biggestCount)
                 {
                     currentBiggestPredictions.Add(currentPrediction);
+                }
+            }
+            else
+            {
+                predictionCount.Add(currentPrediction, 1);
+            }
+        }
+        return currentBiggestPredictions.ToArray();
+    }
+
+    public DogType[] FindMostCommanDogTypeInTextureArray(Texture2D[] texture2DsToTest)
+    {
+        Dictionary<int, int> predictionCount = new Dictionary<int, int>();
+        int biggestCount = 0;
+        List<DogType> currentBiggestPredictions = new List<DogType>();
+        for (int i = 0; i < texture2DsToTest.Length; ++i)
+        {
+            int currentPrediction = TestTextureForIntValue(texture2DsToTest[i]);
+            if (predictionCount.TryGetValue(currentPrediction, out int count))
+            {
+                int newCount = count + 1;
+                predictionCount[currentPrediction] = newCount;
+                if (newCount > biggestCount)
+                {
+                    biggestCount = newCount;
+                    currentBiggestPredictions.Clear();
+                    currentBiggestPredictions.Add((DogType)currentPrediction);
+                }
+                else if (newCount == biggestCount)
+                {
+                    currentBiggestPredictions.Add((DogType)currentPrediction);
                 }
             }
             else

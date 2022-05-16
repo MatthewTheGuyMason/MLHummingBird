@@ -27,7 +27,7 @@ public class DogBreedIDer : MonoBehaviour
         {
             for (int arrayNum = 0; arrayNum < allDogPictureOfBreed.Count; ++arrayNum)
             {
-                int[] dogIds = dogClassifier.FindMostCommanInTextureArray(allDogPictureOfBreed[arrayNum].texture2Ds);
+                int[] dogIds = dogClassifier.FindMostCommanIntInTextureArray(allDogPictureOfBreed[arrayNum].texture2Ds);
                 for (int i = 0; i < dogIds.Length; ++i)
                 {
                     Debug.Log(allDogPictureOfBreed[arrayNum].dogName + " Dog ID is: " + dogIds[i]);

@@ -13,8 +13,19 @@ public class HolderSpawner : MonoBehaviour
     [SerializeField]
     private MeshCollider islandBoundries;
 
+
+
+    private List<StampHolder> stampHolders;
+
     private void Awake()
     {
+        stampHolders = new List<StampHolder>();
+    }
+
+    public void SpawnHolders()
+    {
+        ClearHolders();
+
         // iterate through each value of the enum
         foreach (DogType enumValue in System.Enum.GetValues(typeof(DogType)))
         {
@@ -29,7 +40,7 @@ public class HolderSpawner : MonoBehaviour
             randomDirection = new Vector3(randomDirection.x, 0f, randomDirection.z).normalized;
 
             // Move out in that direction
-            Vector3 topPosition =  centrePoint + randomDirection * Random.Range(1f, FlowerArea.areaDiamter * 0.375f);
+            Vector3 topPosition = centrePoint + randomDirection * Random.Range(1f, FlowerArea.areaDiamter * 0.375f);
 
             // Ray-cast down to see if it can hit the floor
             if (Physics.Raycast(topPosition, Vector3.down, out RaycastHit hitPoint, FlowerArea.areaDiamter))
@@ -38,7 +49,26 @@ public class HolderSpawner : MonoBehaviour
                 StampHolder newStampHolder = newHolder.GetComponent<StampHolder>();
                 newStampHolder.heldType = enumValue;
                 newStampHolder.SetText(enumValue.ToString());
+                stampHolders.Add(newStampHolder);
+            }
+            else
+            {
+                Debug.LogError("Could not spawn holder for type " + enumValue.ToString());
             }
         }
+    }
+
+    private void ClearHolders()
+    {
+        for (int i = 0; i < stampHolders.Count; ++i)
+        {
+            Destroy(stampHolders[i].gameObject);
+        }
+        stampHolders.Clear();
+    }
+
+    public StampHolder[] GetAllHoldersInLevel()
+    {
+        return stampHolders.ToArray();
     }
 }
