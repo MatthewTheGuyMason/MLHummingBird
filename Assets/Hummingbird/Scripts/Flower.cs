@@ -1,34 +1,72 @@
+//====================================================================================================================================================================================================================================
+//  Name:               Flower.cs
+//  Author:             Matthew Mason
+//  Date Created:       29/05/2022
+//  Date Last Modified: 29/05/2022
+//  Brief:              Manages a single flower with nectar
+//====================================================================================================================================================================================================================================
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+// Script based on unity tutorial located at: https://learn.unity.com/course/ml-agents-hummingbirds
 
 /// <summary>
 /// Manages a single flower with nectar
 /// </summary>
 public class Flower : MonoBehaviour
 {
-    [Tooltip("Color when the flower is full")]
-    public Color fullFlowerColor = new Color(1f, 0f, 0.3f);
-
-    [Tooltip("Color when the flower is empty")]
-    public Color emptyFlowerColor = new Color(0.5f, 0f, 1f);
-
-    /// <summary>
-    /// The trigger collider representing the nectarCollider
-    /// </summary>
+    #region Public Variables
+    [Tooltip("The trigger collider representing the nectarCollider")]
     public Collider necterCollider;
 
-    /// <summary>
-    /// The solid collider representing the flower petals
-    /// </summary>
-    [SerializeField]
-    private Collider flowerCollider;
+    [Tooltip("Color when the flower is full")]
+    public Color fullFlowerColor = new Color(1f, 0f, 0.3f);
+    [Tooltip("Color when the flower is empty")]
+    public Color emptyFlowerColor = new Color(0.5f, 0f, 1f);
+    #endregion
 
+    #region Private Serialized Fields
+    [SerializeField]
+    [Tooltip("The solid collider representing the flower petals")]
+    private Collider flowerCollider;
+    #endregion
+
+    #region Private Variables
     /// <summary>
     /// The flower's material
     /// </summary>
     private Material flowerMaterial;
+    #endregion
 
+    #region Public Properties
+    /// <summary>
+    /// Whether the flower has any nectar left remaining
+    /// </summary>
+    public bool HasNectar
+    {
+        get
+        {
+            return NectarAmount > 0f;
+        }
+    }
+
+    /// <summary>
+    /// The amount of nectar remaining in the flower
+    /// </summary>
+    public float NectarAmount { get; private set; }
+
+    /// <summary>
+    /// The centre position of the nectar collider
+    /// </summary>
+    public Vector3 FlowerCenterPosition
+    {
+        get
+        {
+            return necterCollider.transform.position;
+        }
+    }
     /// <summary>
     /// A vector pointing straight out of the flower
     /// </summary>
@@ -46,34 +84,18 @@ public class Flower : MonoBehaviour
             }    
         }
     }
+    #endregion
 
-    /// <summary>
-    /// The center position of the nectar collider
-    /// </summary>
-    public Vector3 FlowerCenterPosition
+    #region Unity Methods
+    private void Awake()
     {
-        get
-        {
-            return necterCollider.transform.position;
-        }
+        // Find when the flower's mesh renderer and get the main material
+        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        flowerMaterial = meshRenderer.material;
     }
+    #endregion
 
-    /// <summary>
-    /// The amount of nectar remaining in the flower
-    /// </summary>
-    public float NectarAmount { get; private set; }
-
-    /// <summary>
-    /// Whether the flower has any nectar left remaining
-    /// </summary>
-    public bool HasNectar
-    {
-        get
-        {
-            return NectarAmount > 0f;
-        }
-    }
-
+    #region Public Methods
     /// <summary>
     /// Attempts to remove nectar from the flower
     /// </summary>
@@ -118,15 +140,5 @@ public class Flower : MonoBehaviour
         // Change the flower color to indicate that it is full
         flowerMaterial.SetColor("_BaseColor", fullFlowerColor);
     }
-
-    private void Awake()
-    {
-        // Find when the flower's mesh renderer and get the main material
-        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-        flowerMaterial = meshRenderer.material;
-
-        // Find flower and nectar colliders
-        //flowerCollider = transform.Find("FlowerCollider").GetComponent<Collider>();
-        //necterCollider = transform.Find("FlowerNectarCollider").GetComponent<Collider>();
-    }
+    #endregion
 }

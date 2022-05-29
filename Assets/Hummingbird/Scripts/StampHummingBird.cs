@@ -24,6 +24,25 @@ public class StampHummingBird : HummingBirdAgent
     [SerializeField]
     private DogClassifier dogClassifier;
 
+    [SerializeField]
+    [Tooltip("How close the humming bird has to be to an object before it stop gain and losing reward for getting close")]
+    private float desiredRewardStopProximity;
+
+    [SerializeField]
+    private bool isMainHummingBird;
+
+    private Vector3 destination;
+    private Vector3 desinationUpVector;
+
+    private float lastCheckDistanceToObjective;
+    private float currentChangeInRelativeDistance;
+
+    private float lastBeakInFrontDotProduct;
+    private float currentChangeBeakingInFrontDotProduct;
+
+    private float lastBeakPointingDotProduct;
+    private float currentChangeBeakPointingDotProduct;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -44,44 +63,51 @@ public class StampHummingBird : HummingBirdAgent
         // Observe the agent's local rotation (4 observations)
         sensor.AddObservation(transform.localRotation.normalized);
 
-        Vector3 desination;// = Vector3.zero;
-        Vector3 desinationUpVector;// = Vector3.up;
         // If the stamp is not held its trying to get to flowers
         if (stampHeld == null)
         {
-            desination = nearestFlower.FlowerCenterPosition;
-            desinationUpVector = Vector3.up;
+            destination = nearestFlower.FlowerCenterPosition;
+            desinationUpVector = nearestFlower.FlowerUpVector;
         }
         else
         {
             if (stampHolders.TryGetValue(stampHeld.dogType, out StampHolder stampHolder))
             {
-                desination = stampHolder.transform.position;
+                destination = stampHolder.transform.position;
                 desinationUpVector = stampHolder.transform.up;
             }
             else
             {
                 Destroy(stampHeld.gameObject);
-                desination = nearestFlower.FlowerCenterPosition;
+                destination = nearestFlower.FlowerCenterPosition;
                 desinationUpVector = Vector3.up;
             }
         }
         // Get a vector from the beak tip to the nearest flower
-        Vector3 toDestination = desination - beakTip.position;
+        Vector3 toDestination = destination - beakTip.position;
 
         // Observe a normalized vector pointing to the nearest flower (3 observations)
         sensor.AddObservation(toDestination.normalized);
 
+        float newBeakingInFrontDotProduct = Vector3.Dot(toDestination.normalized, -destination.normalized);
+        currentChangeBeakingInFrontDotProduct = newBeakingInFrontDotProduct - lastBeakInFrontDotProduct;
+        lastBeakInFrontDotProduct = newBeakingInFrontDotProduct;
         // Observe a dot product that indicate whether the beak tip is in front of the flower (1 observations)
         // (+1 means that the beak tip is directly in front of the flower, -1 means directly behind)
-        sensor.AddObservation(Vector3.Dot(toDestination.normalized, -desination.normalized));
+        sensor.AddObservation(newBeakingInFrontDotProduct);
 
+        float newBeakPointingDotProduct = Vector3.Dot(beakTip.forward.normalized, -desinationUpVector.normalized);
+        currentChangeBeakPointingDotProduct = newBeakPointingDotProduct - lastBeakPointingDotProduct;
+        lastBeakPointingDotProduct = newBeakPointingDotProduct;
         // Observe a dot product that indicates whether the beak is point towards the flower (1 observations)
         // (+1 means that the beak is points directly at the flower, -1 means directly away
-        sensor.AddObservation(Vector3.Dot(beakTip.forward.normalized, -desinationUpVector.normalized));
+        sensor.AddObservation(newBeakPointingDotProduct);
 
         // Observe the relative distance from the beak tip to the flower (1 observations)
-        sensor.AddObservation(toDestination.magnitude / FlowerArea.areaDiamter);
+        float newReltiveDistance = toDestination.magnitude / FlowerArea.areaDiamter;
+        currentChangeInRelativeDistance = newReltiveDistance - lastCheckDistanceToObjective;
+        sensor.AddObservation(newReltiveDistance);
+        lastCheckDistanceToObjective = newReltiveDistance;
 
         // Do the extra observations here
         // If a stamp is held
@@ -125,6 +151,18 @@ public class StampHummingBird : HummingBirdAgent
         //{
         //    distanceToHolder = Vector3.Distance(transform.position, stampHolder.transform.position);
         //}
+
+        // Reward or punish the humming bird for getting closer to objective
+        // Or reward it for angling its beak correctly 
+        if (Vector3.Distance(GetDestinationHoverPoint(), beakTip.position) > desiredRewardStopProximity)
+        {
+            AddReward(-currentChangeInRelativeDistance * 0.001f);
+        }
+        else
+        {
+            AddReward(currentChangeBeakingInFrontDotProduct * 0.001f);
+            AddReward(currentChangeBeakPointingDotProduct * 0.001f);
+        }
 
         base.OnActionReceived(vectorAction);
 
@@ -216,5 +254,21 @@ public class StampHummingBird : HummingBirdAgent
             }
         }
 
+    }
+
+    protected void OnDrawGizmos()
+    {
+        if (Application.isPlaying && Application.isEditor)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(GetDestinationHoverPoint(), desiredRewardStopProximity);
+            Gizmos.DrawLine(beakTip.position, beakTip.position + beakTip.forward);
+            Gizmos.DrawLine(destination, destination + desinationUpVector);
+        }
+    }
+
+    private Vector3 GetDestinationHoverPoint()
+    {
+        return destination + desinationUpVector * desiredRewardStopProximity * 0.9f;
     }
 }

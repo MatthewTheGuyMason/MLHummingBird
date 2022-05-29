@@ -4,7 +4,7 @@ default_settings:
     threaded: false
     max_steps: 5.0e5
     time_horizon: 64
-    summary_freq: 10000
+    summary_freq: 20000
     hyperparameters:
         batch_size: 1024
         buffer_size: 10240
@@ -34,5 +34,5 @@ behaviors:
             batch_size: 2048
             buffer_size: 20480
         network_settings:
-            hidden_units: 512
-            num_layers: 3
+            hidden_units: 1024
+            num_layers: 4

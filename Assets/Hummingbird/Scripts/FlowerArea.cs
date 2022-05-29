@@ -1,25 +1,77 @@
+//====================================================================================================================================================================================================================================
+//  Name:               FlowerArea.cs
+//  Author:             Matthew Mason
+//  Date Created:       29/05/2022
+//  Date Last Modified: 29/05/2022
+//  Brief:              Manages a collection of flower plants and attached flowers
+//====================================================================================================================================================================================================================================
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+// Script based on unity tutorial located at: https://learn.unity.com/course/ml-agents-hummingbirds
 
 /// <summary>
 /// Manages a collection of flower plants and attached flowers
 /// </summary>
 public class FlowerArea : MonoBehaviour
 {
+    #region Public Constants
     // The diameter of the area where the agent and the flower can be
     // used for observing the relative distance from agent to the flower
     public const float areaDiamter = 20f;
+    #endregion
 
-    // The list of all flower plants in this flower area (flower plants have multiple flowers)
-    private List<GameObject> flowerPlants;
-
-    // A lookup dictionary for looking up a flower from a nectar collider
+    #region Private Methods
+    /// <summary>
+    /// A lookup dictionary for looking up a flower from a nectar collider
+    /// </summary>
     private Dictionary<Collider, Flower> nectarFlowerDictionary;
 
+    /// <summary>
+    /// The list of all flower plants in this flower area (flower plants have multiple flowers)
+    /// </summary>
+    private List<GameObject> flowerPlants;
+    #endregion
+
+    #region Public Properties
+    /// <summary>
+    /// The flowers inside the flower area
+    /// </summary>
     public List<Flower> Flowers { get; private set; }
+    #endregion
 
+    #region Unity Methods
+    private void Awake()
+    {
+        // Initialize variables
+        flowerPlants = new List<GameObject>();
+        nectarFlowerDictionary = new Dictionary<Collider, Flower>();
+        Flowers = new List<Flower>();
+    }
 
+    private void Start()
+    {
+        // Find all flowers that are children of this GameObject/Transform
+        FindChildFlowers(transform);
+    }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Gets the <see cref="Flower"/> that a nectar collider belongs to
+    /// </summary>
+    /// <param name="nectarCollider">The nectar collider</param>
+    /// <returns>The matching flower</returns>
+    public Flower GetFlowerFromNectarCollider(Collider nectarCollider)
+    {
+        return nectarFlowerDictionary[nectarCollider];
+    }
+
+    /// <summary>
+    /// Resets all the flowers in area ready for the next episode or round
+    /// </summary>
     public void ResetFlowers()
     {
         // Rotate each flower plant around the Y Axis and subtly around the X and Z
@@ -37,31 +89,9 @@ public class FlowerArea : MonoBehaviour
             flower.ResetFlower();
         }
     }
+    #endregion
 
-    /// <summary>
-    /// Gets the <see cref="Flower"/> that a nectar collider belongs to
-    /// </summary>
-    /// <param name="nectarCollider">The nectar collider</param>
-    /// <returns>The matching flower</returns>
-    public Flower GetFlowerFromNectarCollider(Collider nectarCollider)
-    {
-        return nectarFlowerDictionary[nectarCollider];
-    }
-
-    private void Awake()
-    {
-        // Initialize variables
-        flowerPlants = new List<GameObject>();
-        nectarFlowerDictionary = new Dictionary<Collider, Flower>();
-        Flowers = new List<Flower>();
-    }
-
-    private void Start()
-    {
-        // Find all flowers that are children of this GameObject/Transform
-        FindChildFlowers(transform);
-    }
-
+    #region Private Methods
     /// <summary>
     /// Recursively finds all the flowers and flower plants that are children of a parent transform 
     /// </summary>
@@ -100,4 +130,5 @@ public class FlowerArea : MonoBehaviour
             }
         }
     }
+    #endregion
 }
