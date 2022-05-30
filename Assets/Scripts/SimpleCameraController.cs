@@ -1,3 +1,5 @@
+// Unity's basic flying camera movement script
+
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif

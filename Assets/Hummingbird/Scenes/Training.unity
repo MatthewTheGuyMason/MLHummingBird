@@ -505,7 +505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed3d00957ac4f41459b1803aa53db0e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StampHolderPrefab: {fileID: 7188830976749916927, guid: 849cb0fa1bdaf3b47b14ebdb5622493c, type: 3}
+  stampHolderPrefab: {fileID: 7188830976749916927, guid: 849cb0fa1bdaf3b47b14ebdb5622493c, type: 3}
   flowerArea: {fileID: 994640981}
   islandBoundries: {fileID: 1620625001}
 --- !u!114 &994640981 stripped
@@ -763,8 +763,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 600dca4628c4f1d4786d27f425ec1d09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  expectedTextureWidth: 256
   expectedTextureHeight: 256
+  expectedTextureWidth: 256
   modelAsset: {fileID: 5022602860645237092, guid: 6f4c59d511031af41aa5d6f9f1a3bd9a, type: 3}
 --- !u!4 &1785316271
 Transform:

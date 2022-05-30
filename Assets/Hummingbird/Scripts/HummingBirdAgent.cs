@@ -1,3 +1,11 @@
+//====================================================================================================================================================================================================================================
+//  Name:               HummingBirdAgent.cs
+//  Author:             Matthew Mason
+//  Date Created:       29/05/2022
+//  Date Last Modified: 29/05/2022
+//  Brief:              A hummingbird Machine Learning Agent
+//====================================================================================================================================================================================================================================
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,6 +13,8 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
+
+// Script based on unity tutorial located at: https://learn.unity.com/course/ml-agents-hummingbirds
 
 /// <summary>
 /// A hummingbird Machine Learning Agent
@@ -53,14 +63,14 @@ public class HummingBirdAgent : Agent
     #endregion
 
     #region Protected Variables
-    // The nearest flower to the agent
-    protected Flower nearestFlower;
-
     // Allows for smoother pitch changes
     protected float smoothPitchChange = 0f;
 
     // Allows for smoother yaw changes
     protected float smoothYawChange = 0f;
+
+    // The nearest flower to the agent
+    protected Flower nearestFlower;
 
     // Weather the agent is frozen (intentionality not flying)
     protected bool frozen = false;
@@ -73,7 +83,89 @@ public class HummingBirdAgent : Agent
     public float NectarObtained { get; protected set; }
     #endregion
 
+    #region Unity Methods
+    protected void OnTriggerEnter(Collider other)
+    {
+        OnTriggerEnterOrStay(other);
+    }
+
+    protected void OnTriggerStay(Collider other)
+    {
+        OnTriggerEnterOrStay(other);
+    }
+
+    /// <summary>
+    /// Called when the agent collides with something solid 
+    /// </summary>
+    /// <param name="collision">The collision info</param>
+    protected void OnCollisionEnter(Collision collision)
+    {
+        if (trainingMode && collision.collider.CompareTag("boundary"))
+        {
+            // Collided with the area boundary, give negative reward
+            AddReward(-0.5f);
+        }
+    }
+
+    /// <summary>
+    /// Called every frame
+    /// </summary>
+    protected virtual void Update()
+    {
+        // Draw a line from the beak tip to the nearest flower
+        if (nearestFlower != null)
+        {
+            Debug.DrawLine(beakTip.position, nearestFlower.FlowerCenterPosition, Color.green);
+        }
+
+        // If the nearest flower has no nectar then it should change to another flower
+        // This would have likely happened if another humming bird had drained it first
+        if (nearestFlower == null)
+        {
+            UpdateNearestFlower();
+        }
+        else if (!nearestFlower.HasNectar)
+        {
+            UpdateNearestFlower();
+        }
+    }
+    /// <summary>
+    /// Called every 0.2 seconds
+    /// </summary>
+    protected void FixedUpdate()
+    {
+        if (nearestFlower != null)
+        {
+            if (nearestFlower != null && !nearestFlower.HasNectar)
+            {
+                UpdateNearestFlower();
+            }
+        }
+    }
+
+    protected void Start()
+    {
+        if (nearestFlower != null)
+        {
+            UpdateNearestFlower();
+        }
+    }
+    #endregion
+
     #region Public Methods
+    #region Overrides
+    /// <summary>
+    /// Collect vector observations from the environment
+    /// </summary>
+    /// <param name="sensor">The vector sensor</param>
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        if (!TryCollectHummingbirdObservations(sensor))
+        {
+            sensor.AddObservation(new float[10]);
+            return;
+        }
+    }
     /// <summary>
     /// Initialize the agent
     /// </summary>
@@ -96,7 +188,29 @@ public class HummingBirdAgent : Agent
             MaxStep = 0;
         }
     }
+    /// <summary>
+    /// Called when action is received from either player input or the neural network
+    /// 
+    /// vectorAction[i] represents
+    /// Index 0: move vector X (+1 = right,     -1 = left)
+    /// Index 1: move vector y (+1 = up,        -1 = down)
+    /// Index 2: move vector z (+1 = forward,   -1 = backwards)
+    /// Index 3: pitch angle (+1 = pitch up,    -1 = pitch down)
+    /// Index 4: yaw angle (+1 = turn right,    -1 = turn left) 
+    /// </summary>
+    /// <param name="vectorAction">The actions to take</param>
+    public override void OnActionReceived(ActionBuffers vectorAction)
+    {
+        // Don't take actions if frozen
+        if (frozen)
+        {
+            return;
+        }
 
+        ProcessForceMovementActions(vectorAction.ContinuousActions[0], vectorAction.ContinuousActions[1], vectorAction.ContinuousActions[2]);
+
+        ProcessRoationActions(vectorAction.ContinuousActions[3], vectorAction.ContinuousActions[4]);
+    }
     /// <summary>
     /// Reset the agent when an episode begins
     /// </summary>
@@ -131,65 +245,6 @@ public class HummingBirdAgent : Agent
 
 
     }
-
-    /// <summary>
-    /// Called when action is received from either player input or the neural network
-    /// 
-    /// vectorAction[i] represents
-    /// Index 0: move vector X (+1 = right,     -1 = left)
-    /// Index 1: move vector y (+1 = up,        -1 = down)
-    /// Index 2: move vector z (+1 = forward,   -1 = backwards)
-    /// Index 3: pitch angle (+1 = pitch up,    -1 = pitch down)
-    /// Index 4: yaw angle (+1 = turn right,    -1 = turn left) 
-    /// </summary>
-    /// <param name="vectorAction">The actions to take</param>
-    public override void OnActionReceived(ActionBuffers vectorAction)
-    {
-        // Don't take actions if frozen
-        if (frozen)
-        {
-            return;
-        }
-
-        ProcessForceMovementActions(vectorAction.ContinuousActions[0], vectorAction.ContinuousActions[1], vectorAction.ContinuousActions[2]);
-
-        ProcessRoationActions(vectorAction.ContinuousActions[3], vectorAction.ContinuousActions[4]);
-    }
-
-    /// <summary>
-    /// Collect vector observations from the environment
-    /// </summary>
-    /// <param name="sensor">The vector sensor</param>
-    public override void CollectObservations(VectorSensor sensor)
-    {
-        if (!TryCollectHummingbirdObservations(sensor))
-        {
-            sensor.AddObservation(new float[10]);
-            return;
-        }
-
-        //// Observe the agent's local rotation (4 observations)
-        //sensor.AddObservation(transform.localRotation.normalized);
-        //// Get a vector from the beak tip to the nearest flower
-        //Vector3 toFlower = nearestFlower.FlowerCenterPosition - beakTip.position;
-
-        //// Observe a normalized vector pointing to the nearest flower (3 observations)
-        //sensor.AddObservation(toFlower.normalized);
-
-        //// Observe a dot product that indicate whether the beak tip is in front of the flower (1 observations)
-        //// (+1 means that the beak tip is directly in front of the flower, -1 means directly behind)
-        //sensor.AddObservation(Vector3.Dot(toFlower.normalized, -nearestFlower.FlowerCenterPosition.normalized));
-
-        //// Observe a dot product that indicates whether the beak is point towards the flower (1 observations)
-        //// (+1 means that the beak is points directly at the flower, -1 means directly away
-        //sensor.AddObservation(Vector3.Dot(beakTip.forward.normalized, -nearestFlower.FlowerUpVector.normalized));
-
-        //// Observe the relative distance from the beak tip to the flower (1 observations)
-        //sensor.AddObservation(toFlower.magnitude / FlowerArea.areaDiamter);
-
-        //// 10 Total Observation
-    }
-
     /// <summary>
     /// When Behaviour type is set to "Heuristic Only" on the agent's behaviour Parameters,
     /// this function will be called. Its return values will be fed into
@@ -268,6 +323,7 @@ public class HummingBirdAgent : Agent
         continuousActions[3] = pitch;
         continuousActions[4] = yaw;
     }
+    #endregion
 
     /// <summary>
     /// Prevent the agent from moving and taking actions
@@ -278,7 +334,6 @@ public class HummingBirdAgent : Agent
         frozen = true;
         birdRigidbody.Sleep();
     }
-
     /// <summary>
     /// Resume the agent movement and actions
     /// </summary>
@@ -291,6 +346,11 @@ public class HummingBirdAgent : Agent
     #endregion
 
     #region Protected methods
+    /// <summary>
+    /// Attempts to collect all the observation needed for any humming bird agent
+    /// </summary>
+    /// <param name="sensor">The sensor to add the observations too</param>
+    /// <returns>True if observations were successfully added to the sensor</returns>
     protected bool TryCollectHummingbirdObservations(VectorSensor sensor)
     {
         // If the nearestFlower is null, observe and emoty array and return early
@@ -322,6 +382,12 @@ public class HummingBirdAgent : Agent
         return true;
     }
 
+    /// <summary>
+    /// The process force movement action
+    /// </summary>
+    /// <param name="xMovementAction">The movement along the x axis</param>
+    /// <param name="yMovementAction">The movement along the y axis</param>
+    /// <param name="zMovementAction">The movement along the z axis</param>
     protected void ProcessForceMovementActions(float xMovementAction, float yMovementAction, float zMovementAction)
     {
         // Calculate movement vector 
@@ -330,7 +396,11 @@ public class HummingBirdAgent : Agent
         // Add force in the direction of the move vector
         birdRigidbody.AddForce(move * moveForce);
     }
-
+    /// <summary>
+    /// Processes the forces for the rotational movement
+    /// </summary>
+    /// <param name="pitchChange">The change around the X axis</param>
+    /// <param name="yawChange">The change around the Y axis</param>
     protected void ProcessRoationActions(float pitchChange, float yawChange)
     {
         // Get the current rotation
@@ -351,7 +421,6 @@ public class HummingBirdAgent : Agent
         // Apply the new rotation
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
     }
-
     /// <summary>
     /// Move the agent to a safe random position (i.e. does not collide with anything)
     /// If in front of flower, also point the beak at the flower
@@ -483,77 +552,4 @@ public class HummingBirdAgent : Agent
         }
     }
     #endregion
-
-    #region Unity Methods
-    protected void OnTriggerEnter(Collider other)
-    {
-        OnTriggerEnterOrStay(other);
-    }
-
-    protected void OnTriggerStay(Collider other)
-    {
-        OnTriggerEnterOrStay(other);
-    }
-
-    /// <summary>
-    /// Called when the agent collides with something solid 
-    /// </summary>
-    /// <param name="collision">The collision info</param>
-    protected void OnCollisionEnter(Collision collision)
-    {
-        if (trainingMode && collision.collider.CompareTag("boundary"))
-        {
-            // Collided with the area boundary, give negative reward
-            AddReward(-0.5f);
-        }
-    }
-
-    /// <summary>
-    /// Called every frame
-    /// </summary>
-    protected virtual void Update()
-    {
-        // Draw a line from the beak tip to the nearest flower
-        if (nearestFlower != null)
-        {
-            Debug.DrawLine(beakTip.position, nearestFlower.FlowerCenterPosition, Color.green);
-        }
-
-        // If the nearest flower has no nectar then it should change to another flower
-        // This would have likely happened if another humming bird had drained it first
-        if (nearestFlower == null)
-        {
-            UpdateNearestFlower();
-        }
-        else if (!nearestFlower.HasNectar)
-        {
-            UpdateNearestFlower();
-        }
-    }
-    /// <summary>
-    /// Called every 0.2 seconds
-    /// </summary>
-    protected void FixedUpdate()
-    {
-        if (nearestFlower != null)
-        {
-            if (nearestFlower != null && !nearestFlower.HasNectar)
-            {
-                UpdateNearestFlower();
-            }
-        }
-    }
-
-    protected void Start()
-    {
-        if (nearestFlower != null)
-        {
-            UpdateNearestFlower();
-        }
-    }
-    #endregion
-
-
-
-
 }

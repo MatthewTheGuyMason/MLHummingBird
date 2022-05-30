@@ -12,6 +12,8 @@ using UnityEngine;
 /// Note: This scaler does NOT support aspect ratio based scaling. You will have to do it yourself!
 /// It supports Alpha, but you will have to divide by alpha in your shaders, 
 /// because of premultiplied alpha effect. Or you should use blend modes.
+[System.Obsolete("This Script was retrieved from the above link to attempt to get the textures to scale properly to fit within" +
+    "It did not work and a better solution was found using unity's inbuilt texture minimum size scaling")]
 public class TextureScaler
 {
 

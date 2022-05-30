@@ -1,3 +1,11 @@
+//====================================================================================================================================================================================================================================
+//  Name:               StampHummingBird.cs
+//  Author:             Matthew Mason
+//  Date Created:       29/05/2022
+//  Date Last Modified: 29/05/2022
+//  Brief:              A child the humming bird agent that also deposits stamps after collecting them from flowers
+//====================================================================================================================================================================================================================================
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,54 +14,114 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
 
+/// <summary>
+/// A child the humming bird agent that also deposits stamps after collecting them from flowers
+/// </summary>
 public class StampHummingBird : HummingBirdAgent
 {
-    /// <summary>
-    /// The stamp the agent is currently holding
-    /// </summary>
-    private DogStamp stampHeld;
-
-    private Dictionary<DogType, StampHolder> stampHolders; 
-
+    #region Private Serialized Fields
     [SerializeField]
-    private DogStampFactory stampFactory;
-
-    [SerializeField]
-    private HolderSpawner holderSpawner;
-
-    [SerializeField]
+    [Tooltip("The DogClassifier used to identify new stamps collected")]
     private DogClassifier dogClassifier;
+
+    [SerializeField]
+    [Tooltip("The dog stamp factory this get stamps from")]
+    private DogStampFactory stampFactory;
 
     [SerializeField]
     [Tooltip("How close the humming bird has to be to an object before it stop gain and losing reward for getting close")]
     private float desiredRewardStopProximity;
 
     [SerializeField]
-    private bool isMainHummingBird;
+    [Tooltip("The holder spawn to get the spawn stamp holders from")]
+    private HolderSpawner holderSpawner;
+    #endregion
 
-    private Vector3 destination;
-    private Vector3 desinationUpVector;
+    #region Private Variables
+    /// <summary>
+    /// The stamp that the agent is currently holding
+    /// </summary>
+    private DogStamp stampHeld;
 
-    private float lastCheckDistanceToObjective;
-    private float currentChangeInRelativeDistance;
+    /// <summary>
+    /// A dictionary of the dog breed type and the stamp holders store that kind of stamp
+    /// </summary>
+    private Dictionary<DogType, StampHolder> stampHolders;
 
-    private float lastBeakInFrontDotProduct;
+    /// <summary>
+    /// The value difference between the beak being in front dot product last check and the new check
+    /// </summary>
     private float currentChangeBeakingInFrontDotProduct;
-
-    private float lastBeakPointingDotProduct;
+    /// <summary>
+    /// The difference between the beak point towards reverse destination up dot product and last time it was checked 
+    /// </summary>
     private float currentChangeBeakPointingDotProduct;
+    /// <summary>
+    /// The amount that distance between the objective and last time it was check and the current time
+    /// </summary>
+    private float currentChangeInRelativeDistance;
+    /// <summary>
+    /// The dot product value for the angle between the up of the destination and vector of the beak away from the destination
+    /// </summary>
+    private float lastBeakInFrontDotProduct;
+    /// <summary>
+    /// The dot product between the reverse direction of the destination up the last time it was checked
+    /// </summary>
+    private float lastBeakPointingDotProduct;
+    /// <summary>
+    /// The value of the distance to object whence last checked
+    /// </summary>
+    private float lastCheckDistanceToObjective;
 
-    public override void Initialize()
+    /// <summary>
+    /// The destination the humming bird is trying to get too
+    /// </summary>
+    private Vector3 destination;
+    /// <summary>
+    /// The destination upward direction that it can be entered from 
+    /// </summary>
+    private Vector3 desinationUpVector;
+    #endregion
+
+    #region Unity Methods
+    protected override void Update()
     {
-        base.Initialize();
-        stampHolders = new Dictionary<DogType, StampHolder>();
-        StampHolder[] stampHolderComponents = flowerArea.GetComponentsInChildren<StampHolder>();
-        for (int i = 0; i < stampHolderComponents.Length; ++i)
+        // Draw a line from the beak tip to the nearest flower
+        if (nearestFlower != null)
         {
-            stampHolders.Add(stampHolderComponents[i].heldType, stampHolderComponents[i]);
+            Debug.DrawLine(beakTip.position, nearestFlower.FlowerCenterPosition, Color.green);
         }
+
+        // If the nearest flower has no nectar then it should change to another flower
+        // This would have likely happened if another humming bird had drained it first
+        if (stampHeld == null)
+        {
+            if (nearestFlower == null)
+            {
+                UpdateNearestFlower();
+            }
+            else if (!nearestFlower.HasNectar)
+            {
+                UpdateNearestFlower();
+            }
+        }
+
     }
 
+    protected void OnDrawGizmos()
+    {
+        if (Application.isPlaying && Application.isEditor)
+        {
+            // Draw the area of expected hovering
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(GetDestinationHoverPoint(), desiredRewardStopProximity);
+            Gizmos.DrawLine(beakTip.position, beakTip.position + beakTip.forward);
+            Gizmos.DrawLine(destination, destination + desinationUpVector);
+        }
+    }
+    #endregion
+
+    #region Public Methods
     /// <summary>
     /// Collect vector observations from the environment
     /// </summary>
@@ -115,7 +183,33 @@ public class StampHummingBird : HummingBirdAgent
 
         // 11 Total Observation
     }
+    public override void Initialize()
+    {
+        base.Initialize();
+        // Set up dictionary of the stamp holders
+        stampHolders = new Dictionary<DogType, StampHolder>();
+        StampHolder[] stampHolderComponents = flowerArea.GetComponentsInChildren<StampHolder>();
+        for (int i = 0; i < stampHolderComponents.Length; ++i)
+        {
+            stampHolders.Add(stampHolderComponents[i].heldType, stampHolderComponents[i]);
+        }
+    }
+    public override void OnActionReceived(ActionBuffers vectorAction)
+    {
+        // Reward or punish the humming bird for getting closer to objective
+        // Or reward it for angling its beak correctly 
+        if (Vector3.Distance(GetDestinationHoverPoint(), beakTip.position) > desiredRewardStopProximity)
+        {
+            AddReward(-currentChangeInRelativeDistance * 0.001f);
+        }
+        else
+        {
+            AddReward(currentChangeBeakingInFrontDotProduct * 0.001f);
+            AddReward(currentChangeBeakPointingDotProduct * 0.001f);
+        }
 
+        base.OnActionReceived(vectorAction);
+    }
     public override void OnEpisodeBegin()
     {
         base.OnEpisodeBegin();
@@ -143,36 +237,9 @@ public class StampHummingBird : HummingBirdAgent
             stampHolders.Add(stampHolderComponents[i].heldType, stampHolderComponents[i]);
         }
     }
+    #endregion
 
-    public override void OnActionReceived(ActionBuffers vectorAction)
-    {
-        //float distanceToHolder = 0f;
-        //if (stampHeld != null)
-        //{
-        //    distanceToHolder = Vector3.Distance(transform.position, stampHolder.transform.position);
-        //}
-
-        // Reward or punish the humming bird for getting closer to objective
-        // Or reward it for angling its beak correctly 
-        if (Vector3.Distance(GetDestinationHoverPoint(), beakTip.position) > desiredRewardStopProximity)
-        {
-            AddReward(-currentChangeInRelativeDistance * 0.001f);
-        }
-        else
-        {
-            AddReward(currentChangeBeakingInFrontDotProduct * 0.001f);
-            AddReward(currentChangeBeakPointingDotProduct * 0.001f);
-        }
-
-        base.OnActionReceived(vectorAction);
-
-        //// Reward the agent for moving closer to the stamp holder if it is holding a stamp
-        //if (stampHeld != null)
-        //{
-        //    AddReward((distanceToHolder - Vector3.Distance(transform.position, stampHolder.transform.position)) * 0.0001f);
-        //}
-    }
-
+    #region Protected Methods
     protected override void OnTriggerEnterOrStay(Collider collider)
     {
         // Add a section about adding items to the collection box
@@ -231,44 +298,16 @@ public class StampHummingBird : HummingBirdAgent
             }
         }
     }
+    #endregion
 
-    protected override void Update()
-    {
-        // Draw a line from the beak tip to the nearest flower
-        if (nearestFlower != null)
-        {
-            Debug.DrawLine(beakTip.position, nearestFlower.FlowerCenterPosition, Color.green);
-        }
-
-        // If the nearest flower has no nectar then it should change to another flower
-        // This would have likely happened if another humming bird had drained it first
-        if (stampHeld == null)
-        {
-            if (nearestFlower == null)
-            {
-                UpdateNearestFlower();
-            }
-            else if (!nearestFlower.HasNectar)
-            {
-                UpdateNearestFlower();
-            }
-        }
-
-    }
-
-    protected void OnDrawGizmos()
-    {
-        if (Application.isPlaying && Application.isEditor)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(GetDestinationHoverPoint(), desiredRewardStopProximity);
-            Gizmos.DrawLine(beakTip.position, beakTip.position + beakTip.forward);
-            Gizmos.DrawLine(destination, destination + desinationUpVector);
-        }
-    }
-
+    #region Private Methods
+    /// <summary>
+    /// Returns the point where the humming bird should be hovering in front of the destination before getting the stamp
+    /// </summary>
+    /// <returns>The point where the humming bird should be hovering in front of the destination before getting the stamp</returns>
     private Vector3 GetDestinationHoverPoint()
     {
         return destination + desinationUpVector * desiredRewardStopProximity * 0.9f;
     }
+    #endregion
 }

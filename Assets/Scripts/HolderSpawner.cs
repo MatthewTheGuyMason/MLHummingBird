@@ -1,27 +1,69 @@
+//====================================================================================================================================================================================================================================
+//  Name:               HolderSpawner.cs
+//  Author:             Matthew Mason
+//  Date Created:       30/05/2022
+//  Date Last Modified: 30/05/2022
+//  Brief:              Script for spawning all the stamp holders for each type of dog randomly at the beginning of an episode
+//====================================================================================================================================================================================================================================
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Script for spawning all the stamp holders for each type of dog randomly at the beginning of an episode
+/// </summary>
 public class HolderSpawner : MonoBehaviour
 {
-    [SerializeField]
-    private StampHolder StampHolderPrefab;
+    #region Private Serialized Fields
+    [SerializeField] [Tooltip("The prefab for the spawned stampHolder")]
+    private StampHolder stampHolderPrefab;
 
-    [SerializeField]
+    [SerializeField] [Tooltip("The FlowerArea that the spawner will be contained within")]
     private FlowerArea flowerArea;
 
-    [SerializeField]
+    [SerializeField] [Tooltip("The mesh collider containing the holders within")]
     private MeshCollider islandBoundries;
+    #endregion
 
-
-
+    #region Private Variables
+    /// <summary>
+    /// All the stamps holders spawned
+    /// </summary>
     private List<StampHolder> stampHolders;
+    #endregion
 
+    #region Unity Methods
     private void Awake()
     {
         stampHolders = new List<StampHolder>();
     }
+    #endregion
 
+    #region Public Methods
+    /// <summary>
+    /// Returns all the stamp holders with one flower area (not the whole scene)
+    /// </summary>
+    /// <returns>All the stamp holders with one flower area (not the whole scene)</returns>
+    public StampHolder[] GetAllHoldersInLevel()
+    {
+        return stampHolders.ToArray();
+    }
+
+    /// <summary>
+    /// Removes all holders from the level
+    /// </summary>
+    private void ClearHolders()
+    {
+        for (int i = 0; i < stampHolders.Count; ++i)
+        {
+            Destroy(stampHolders[i].gameObject);
+        }
+        stampHolders.Clear();
+    }
+    /// <summary>
+    /// Spawns a new set of holders into the level
+    /// </summary>
     public void SpawnHolders()
     {
         ClearHolders();
@@ -45,7 +87,7 @@ public class HolderSpawner : MonoBehaviour
             // Ray-cast down to see if it can hit the floor
             if (Physics.Raycast(topPosition, Vector3.down, out RaycastHit hitPoint, FlowerArea.areaDiamter))
             {
-                GameObject newHolder = GameObject.Instantiate(StampHolderPrefab.gameObject, hitPoint.point, StampHolderPrefab.transform.rotation, flowerArea.transform);
+                GameObject newHolder = GameObject.Instantiate(stampHolderPrefab.gameObject, hitPoint.point, stampHolderPrefab.transform.rotation, flowerArea.transform);
                 StampHolder newStampHolder = newHolder.GetComponent<StampHolder>();
                 newStampHolder.heldType = enumValue;
                 newStampHolder.SetText(enumValue.ToString());
@@ -57,18 +99,5 @@ public class HolderSpawner : MonoBehaviour
             }
         }
     }
-
-    private void ClearHolders()
-    {
-        for (int i = 0; i < stampHolders.Count; ++i)
-        {
-            Destroy(stampHolders[i].gameObject);
-        }
-        stampHolders.Clear();
-    }
-
-    public StampHolder[] GetAllHoldersInLevel()
-    {
-        return stampHolders.ToArray();
-    }
+    #endregion
 }
